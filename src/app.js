@@ -1,10 +1,11 @@
 import express from "express";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient, ObjectId, Timestamp } from "mongodb";
 import dotenv from "dotenv";
 import cors from "cors";
 import joi from "joi";
 import bcrypt from "bcrypt";
 import { v4 as uuidV4 } from 'uuid';
+import dayjs from 'dayjs';
 
 const app = express();
 dotenv.config();
@@ -15,7 +16,7 @@ const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
 
 //const users = [{name: 'João'}]; // O conteúdo do lastStatus será explicado nos próximos requisitos
-const messages = [{from: 'João', to: 'Todos', text: 'oi galera', type: 'message', time: '20:04:37'}];
+//const messages = [{from: 'João', to: 'Todos', text: 'oi galera', type: 'message', time: '20:04:37'}];
 
 
 try {
@@ -25,19 +26,19 @@ console.log("Erro no mongo.conect", err.message);
 }
 
 db = mongoClient.db();
-const UserCollection = db.collection("participants");
+const UsersCollection = db.collection("participants");
+const MessagesCollection = db.collection("messages");
 
-UserCollection.insertOne({ name: "João" });
 
-app.post
 
-app.get("/test", (req, res) => {
-    console.log("Entrei na rota teste");
-    res.status(200).send("Hello World");
+// ROTA DE LOGIN
+
+
+
+app.post('/participants', async (req, res) => {
     
-});
 
-app.post('/participants', (req, res) => {
+
     const { name } = req.body;  
     // validade empty string joi 
     const schema = joi.object({
@@ -47,13 +48,27 @@ app.post('/participants', (req, res) => {
     if (error) {
         return res.status(400).send(error.details[0].message);
     }   
-    db.collection("participants").insertOne({name})
-      .then(() => {
-        return res.status(201).send("Participante salvo com sucesso!")
-      })
-      .catch(() => {
-        res.status(422).send('O participante não foi salvo!')
-      });
+    
+    let formatedTimestamp = dayjs(Date.now()).format('HH:mm:ss');
+    // check if user already exists in db
+    const user = await UsersCollection.findOne({name: name})
+    
+    if (user) {
+        return res.status(409).send('Usuário já existe');
+    }
+
+    try {
+      await db.collection("participants").insertOne({name, lastStatus: Date.now()});
+      await db.collection("messages").insertOne({from: name, to: "Todos", text: "entra na sala...", type: "status", time:formatedTimestamp });
+
+      return res.status(201).send();
+    } catch (err) {
+      return res.status(422).send();
+    }
+    
+  
+  
+    
   })
 // ROTAS:
 
