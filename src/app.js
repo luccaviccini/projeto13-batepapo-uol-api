@@ -40,7 +40,7 @@ app.post('/participants', async (req, res) => {
         return res.status(400).send(error.details[0].message);
     }   
     
-    let formatedTimestamp = dayjs(Date.now()).format('HH:mm:ss');
+    const formatedTimestamp = dayjs(Date.now()).format('HH:mm:ss');
     // check if user already exists in db
     const user = await UsersCollection.findOne({name: name})
     
@@ -110,13 +110,9 @@ app.get('/messages', async (req, res) => {
         return message;
       }
     });
-    
     filteredMessages.splice(0, filteredMessages.length - parseInt(limit));
     return res.status(200).send(filteredMessages);
-
-    // show last 10 messages
-    
-    
+ 
   });
 
 //post status
@@ -124,15 +120,12 @@ app.post('/status', async (req, res) => {
   const interval = 15000; // 15 seconds
   const limit = 10000; // 10 seconds
     const name = req.headers.user;
-    const user = await UsersCollection
-    .findOne
-    ({name: name});
+    const user = await UsersCollection.findOne({name: name});
     if (!user) {
       return res.status(404).send('Usuário não encontrado');
     }
-    try {
+    try {  
 
-      
       // update lastStatus
       await UsersCollection.updateOne
       ({name: name}, {$set: {lastStatus: Date.now()}});
@@ -141,6 +134,28 @@ app.post('/status', async (req, res) => {
       return res.status(422).send('Erro ao atualizar status');
     }
   });
+
+function deleteInactiveUsers() {
+  const interval = 15000; // 15 seconds
+  const limit = 10000; // 10 seconds
+  setInterval(async () => {
+    const users = await UsersCollection.find().toArray();
+    users.forEach(async (user) => {
+      if (Date.now() - user.lastStatus > limit) {
+        const formatedTimestamp = dayjs(Date.now()).format('HH:mm:ss');
+        await UsersCollection.deleteOne({ name: user.name });
+        await MessagesCollection.insertOne(
+          { from: user.name, 
+            to: "Todos", 
+            text: "sai da sala...", 
+            type: "status", 
+            time:formatedTimestamp });
+      }
+    });
+  }, interval);
+}
+
+deleteInactiveUsers();
 
 
 // delete selected message
