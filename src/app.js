@@ -1,10 +1,8 @@
 import express from "express";
-import { MongoClient, ObjectId, Timestamp } from "mongodb";
+import { MongoClient, ObjectId} from "mongodb";
 import dotenv from "dotenv";
 import cors from "cors";
 import joi from "joi";
-import bcrypt from "bcrypt";
-import { v4 as uuidV4 } from 'uuid';
 import dayjs from 'dayjs';
 import { stripHtml } from "string-strip-html";
 
