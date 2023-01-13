@@ -98,8 +98,31 @@ app.post('/messages', async (req, res) => {
 
 // get all messages
 app.get('/messages', async (req, res) => {
+    let { limit } = req.query;
+    // get user from header
+    const user = req.headers.user;
+    
+    if(!limit) {
+      limit = 100;
+    }
+
+
+
+    // console log type of limit
     const messages = await MessagesCollection.find().toArray();
-    return res.status(200).send(messages);
+    // send only to users messages that are only for user
+    const filteredMessages = messages.filter(message => {
+      if (message.to === user || message.to === 'Todos' || message.from === user) {
+        return message;
+      }
+    });
+    
+    filteredMessages.splice(0, filteredMessages.length - parseInt(limit));
+    return res.status(200).send(filteredMessages);
+
+    // show last 10 messages
+    
+    
   });
 
 
