@@ -105,9 +105,6 @@ app.get('/messages', async (req, res) => {
     if(!limit) {
       limit = 100;
     }
-
-
-
     // console log type of limit
     const messages = await MessagesCollection.find().toArray();
     // send only to users messages that are only for user
@@ -125,6 +122,25 @@ app.get('/messages', async (req, res) => {
     
   });
 
+// delete selected message
+app.delete('/messages/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.headers.user;
+      const message = await MessagesCollection.findOne({ _id: ObjectId(id) });
+      if (!message) {
+        return res.status(404).send('Mensagem não encontrada');
+      }
+      if (message.from !== user) {
+        return res.status(401).send('Usuário não autorizado');
+      }
+      await MessagesCollection.deleteOne({ _id: ObjectId(id) });
+      return res.status(200).send('Mensagem apagada');
+    } catch (err) {
+      return res.status(422).send('Erro ao apagar mensagem');
+    }
+    
+  });
 
 
 const PORT = 5000;
