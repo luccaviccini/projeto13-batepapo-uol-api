@@ -6,6 +6,9 @@ import joi from "joi";
 import bcrypt from "bcrypt";
 import { v4 as uuidV4 } from 'uuid';
 import dayjs from 'dayjs';
+import { stripHtml } from "string-strip-html";
+
+
 
 const app = express();
 dotenv.config();
@@ -29,7 +32,9 @@ const MessagesCollection = db.collection("messages");
 // post participants
 app.post('/participants', async (req, res) => {
 
-    const { name } = req.body;  
+    let { name } = req.body; 
+    name = stripHtml(name).result.trim(); 
+    console.log(name);
 
     // validade empty string joi 
     const schema = joi.object({
@@ -66,9 +71,16 @@ app.get('/participants', async (req, res) => {
 
 // post message
 app.post('/messages', async (req, res) => {
-    const {to, text, type } = req.body;
-    // get User from header
-    const from = req.headers.user;    
+    let {to, text, type } = req.body;    
+    let from = req.headers.user;  
+
+    to = stripHtml(to).result.trim();
+    text = stripHtml(text).result.trim();
+    type = stripHtml(type).result.trim();
+    from = stripHtml(from).result.trim();
+
+    console.log(to, text, type, from);
+      
     
 
     let formatedTimestamp = dayjs(Date.now()).format('HH:mm:ss');
