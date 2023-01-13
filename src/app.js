@@ -15,9 +15,6 @@ app.use(express.json());
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
 let db;
 
-//const users = [{name: 'João'}]; // O conteúdo do lastStatus será explicado nos próximos requisitos
-//const messages = [{from: 'João', to: 'Todos', text: 'oi galera', type: 'message', time: '20:04:37'}];
-
 
 try {
 await mongoClient.connect();
@@ -122,6 +119,30 @@ app.get('/messages', async (req, res) => {
     
   });
 
+//post status
+app.post('/status', async (req, res) => {
+  const interval = 15000; // 15 seconds
+  const limit = 10000; // 10 seconds
+    const name = req.headers.user;
+    const user = await UsersCollection
+    .findOne
+    ({name: name});
+    if (!user) {
+      return res.status(404).send('Usuário não encontrado');
+    }
+    try {
+
+      
+      // update lastStatus
+      await UsersCollection.updateOne
+      ({name: name}, {$set: {lastStatus: Date.now()}});
+      return res.status(200).send('Status atualizado');
+    } catch (err) {
+      return res.status(422).send('Erro ao atualizar status');
+    }
+  });
+
+
 // delete selected message
 app.delete('/messages/:id', async (req, res) => {
     try {
@@ -139,8 +160,9 @@ app.delete('/messages/:id', async (req, res) => {
     } catch (err) {
       return res.status(422).send('Erro ao apagar mensagem');
     }
-    
+
   });
+
 
 
 const PORT = 5000;
