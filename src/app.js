@@ -31,8 +31,13 @@ const MessagesCollection = db.collection("messages");
 app.post('/participants', async (req, res) => {
 
     let { name } = req.body; 
+  // check if name exists
+    if (!name) {
+      return res.status(422).send('Nome não informado');
+    }
+
     name = stripHtml(name).result.trim(); 
-    console.log(name);
+    
 
     // validade empty string joi 
     const schema = joi.object({
@@ -40,7 +45,7 @@ app.post('/participants', async (req, res) => {
     });
     const { error } = schema.validate({ name });
     if (error) {
-        return res.status(400).send(error.details[0].message);
+        return res.status(422).send(error.details[0].message);
     }   
     
     const formatedTimestamp = dayjs(Date.now()).format('HH:mm:ss');
