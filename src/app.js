@@ -57,9 +57,9 @@ app.post("/participants", async (req, res) => {
 
 
   try {
-    await UsersCollection.insertOne({ name, lastStatus: DateNow });
+    await UsersCollection.insertOne({ name: nameClean, lastStatus: DateNow });
     await MessagesCollection.insertOne({
-      from: name,
+      from: nameClean,
       to: "Todos",
       text: "entra na sala...",
       type: "status",
@@ -71,6 +71,8 @@ app.post("/participants", async (req, res) => {
     return res.status(422).send("O participante nao conseguiu entrar na sala");
   }
 });
+
+
 // get all participants
 app.get("/participants", async (req, res) => {
   const participants = await UsersCollection.find().toArray();
