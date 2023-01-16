@@ -77,12 +77,18 @@ app.get("/participants", async (req, res) => {
 // post message
 app.post("/messages", async (req, res) => {
   let { to, text, type } = req.body;
-  let from = utf8.decode(req.headers.user);
+  let from = req.headers.user;
 
   //status 422 - without user header
   if (!from) {
     return res.status(422).send("Usuário não informado");
   }
+
+  from = utf8.decode(from);
+
+  
+
+
   //status 422 - without to, text or type
   if (!to || !text || !type) {
     return res.status(422).send("Dados incompletos");
@@ -126,18 +132,22 @@ app.post("/messages", async (req, res) => {
 // get all messages
 app.get("/messages", async (req, res) => {
   //if there is a limit in the query, use it, otherwise use 100
-  let limit = req.query.limit || 100;
+  let limit = 100;
+  if (req.query.limit) {
+    limit = parseInt(req.query.limit);
+  }
 
   //check if limit is a number and if it is a positive number
-  if (isNaN(limit) || limit < 0) {
+  if (isNaN(limit) || limit <= 0) {
     return res.status(422).send("Limite inválido");
   }
 
-  let user = utf8.decode(req.headers.user);
+  let {user} = (req.headers);
   //status 422 - without user header
   if (!user) {
     return res.status(422).send("Usuário não informado");
   }
+  user = utf8.decode(user);
 
   let messages;
   try {
@@ -150,7 +160,7 @@ app.get("/messages", async (req, res) => {
         ]
     }).toArray();
 
-    const messagesReversed = (await messages).slice(-parseInt(limit)).reverse();
+    const messagesReversed = (await messages).slice(-(limit)).reverse();
     return res.status(200).send(messagesReversed);
   } catch {
     return res.status(422).send("Erro ao buscar mensagens");
