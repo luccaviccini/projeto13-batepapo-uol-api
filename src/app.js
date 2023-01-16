@@ -86,11 +86,11 @@ app.post("/messages", async (req, res) => {
   //status 422 - without to, text or type
   if (!to || !text || !type) {
     return res.status(422).send("Dados incompletos");
-  }
+    }
 
   //check if user exists
   const user = await UsersCollection.findOne({ name: from });
-  if (error || !user) {
+  if (!user) {
     return res.status(422).send("Erro na validação");
   }
 
