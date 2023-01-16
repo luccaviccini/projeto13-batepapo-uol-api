@@ -5,6 +5,7 @@ import cors from "cors";
 import joi from "joi";
 import dayjs from 'dayjs';
 import { stripHtml } from "string-strip-html";
+import utf8 from 'utf8';
 
 
 
@@ -14,7 +15,6 @@ app.use(cors());
 app.use(express.json());
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
-let db;
 
 
 try {
@@ -23,49 +23,54 @@ await mongoClient.connect();
 console.log("Erro no mongo.conect", err.message);
 }
 
-db = mongoClient.db();
+const db = mongoClient.db();
 const UsersCollection = db.collection("participants");
 const MessagesCollection = db.collection("messages");
 
 // post participants
 app.post('/participants', async (req, res) => {
-
-    let { name } = req.body; 
+  let { name } = req.body;
   // check if name exists
-    if (!name) {
-      return res.status(422).send('Nome não informado');
-    }
+  if (!name) {
+    return res.status(422).send("Nome não informado");
+  }
 
-    name = stripHtml(name).result.trim(); 
-    
+  name = stripHtml(name).result.trim();
 
-    // validade empty string joi 
-    const schema = joi.object({
-        name: joi.string().min(1).required(),
+  // validade empty string joi
+  const schema = joi.object({
+    name: joi.string().min(1).required(),
+  });
+  const { error } = schema.validate({ name });
+  if (error) {
+    return res.status(422).send(error.details[0].message);
+  }
+
+  // check if user already exists in db
+  const user = await UsersCollection.findOne({ name: name });
+  if (user) {
+    return res.status(409).send("Usuário já existe");
+  }
+
+  // timestamp related variables
+  const DateNow = Date.now();
+  const formatedTimestamp = dayjs(Date.now()).format("HH:mm:ss");
+
+  try {
+    await UsersCollection.insertOne({ name, lastStatus: DateNow });
+    await MessagesCollection.insertOne({
+      from: name,
+      to: "Todos",
+      text: "entra na sala...",
+      type: "status",
+      time: formatedTimestamp,
     });
-    const { error } = schema.validate({ name });
-    if (error) {
-        return res.status(422).send(error.details[0].message);
-    }   
-    
-    const formatedTimestamp = dayjs(Date.now()).format('HH:mm:ss');
-    // check if user already exists in db
-    const user = await UsersCollection.findOne({name: name})
-    
-    if (user) {
-        return res.status(409).send('Usuário já existe');
-    }
 
-    try {
-      await db.collection("participants").insertOne({name, lastStatus: Date.now()});
-      await db.collection("messages").insertOne({from: name, to: "Todos", text: "entra na sala...", type: "status", time:formatedTimestamp });
-
-      return res.status(201).send("Participante entrou na sala!");
-    } catch (err) {
-      return res.status(422).send('O participante nao conseguiu entrar na sala');
-    } 
-
-  })
+    return res.status(201).send("Participante entrou na sala!");
+  } catch{
+    return res.status(422).send("O participante nao conseguiu entrar na sala");
+  }
+});
 // get all participants
 app.get('/participants', async (req, res) => {
     const participants = await UsersCollection.find().toArray();
