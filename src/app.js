@@ -42,9 +42,11 @@ app.post("/participants", async (req, res) => {
   if (error) {
     return res.status(422).send(error.details[0].message);
   }
+  // strip HTML trim name 
 
+  const nameClean = stripHtml(name).result.trim();
   // check if user already exists in db
-  const user = await UsersCollection.findOne({ name: name });
+  const user = await UsersCollection.findOne({ name: nameClean });
   if (user) {
     return res.status(409).send("Usuário já existe");
   }
@@ -52,6 +54,7 @@ app.post("/participants", async (req, res) => {
   // timestamp related variables
   const DateNow = Date.now();
   const formatedTimestamp = dayjs(Date.now()).format("HH:mm:ss");
+
 
   try {
     await UsersCollection.insertOne({ name, lastStatus: DateNow });
@@ -107,6 +110,8 @@ app.post("/messages", async (req, res) => {
     type: joi.string().valid("message", "private_message").required(),
     from: joi.string().min(1).required(),
   });
+
+
   const { error } = schema.validate({ to, text, type, from });
   if (error) {
     return res.status(422).send(error.details[0].message);
@@ -114,6 +119,10 @@ app.post("/messages", async (req, res) => {
 
   //timestamp related variables
   let formatedTimestamp = dayjs(Date.now()).format("HH:mm:ss");
+  //clean 
+  to = stripHtml(to).result.trim();
+  text = stripHtml(text).result.trim(); 
+  from = stripHtml(from).result.trim();
 
   try {
     await MessagesCollection.insertOne({
